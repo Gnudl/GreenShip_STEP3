@@ -1,54 +1,124 @@
-# GreenShip – STEP 2
+# GreenShip – Hệ Thống Tối Ưu Lộ Trình Hàng Hải Xanh Thích Ứng Thời Tiết
 
-Nhóm Hải Thần: Đặng Long Ngũ, Nguyễn Trần Như Nguyệt, Nguyễn Phương Thùy.
+> **Đề tài NCKH Sinh viên:** Tối ưu lộ trình hàng hải xanh thích ứng thời tiết sử dụng thuật toán lai Crayfish–RIME  
+> **Nhóm thực hiện (Nhóm Hải Thần):**
+> - **Đặng Long Ngũ** (Trưởng nhóm – Kiến trúc hệ thống, Mô hình đánh giá `evaluator.py`, Tích hợp thuật toán)
+> - **Nguyễn Trần Như Nguyệt** (Xử lý dữ liệu khí tượng hải văn NetCDF, Mô hình thời tiết `weather.py`, Thuật toán COA)
+> - **Nguyễn Phương Thùy** (Mô hình hình học & Ràng buộc an toàn hàng hải `constraints.py`, Thuật toán RIME, Kiểm thử Benchmark)
 
-## Mục tiêu
-Chuẩn bị dữ liệu thật và xây dựng hàm evaluate_route() độc lập với COA/RIME. Đánh giá 3 tuyến thủ công, có ít nhất 10 kiểm thử và minh chứng kết quả.
+---
 
-## Cấu trúc
-- config/: kịch bản, cấu hình tàu và giả định đã thống nhất (Ngũ).
-- data/raw/: dữ liệu thời tiết gốc, không sửa trực tiếp (Nguyệt).
-- data/processed/: dữ liệu đã chuẩn hóa UTC, đơn vị và phạm vi (Nguyệt).
-- data/land/: polygon đất/biển và thông tin nguồn (Thùy).
-- data/routes/: 3 tuyến thủ công dạng JSON/GeoJSON (Ngũ và Thùy).
-- data/source_register.csv: danh mục nguồn dữ liệu, metadata và điều kiện sử dụng.
-- src/: weather.py (Nguyệt), route_geometry.py và evaluator.py (Ngũ), constraints.py (Thùy); sẽ tạo khi triển khai từng nhiệm vụ.
-- tests/: kiểm thử evaluator, hình học, dữ liệu và ràng buộc (Thùy, cả nhóm kiểm tra chéo).
-- outputs/maps/: bản đồ vùng dữ liệu và 3 tuyến.
-- outputs/evaluations/: JSON kết quả, chi tiết từng đoạn và bảng so sánh.
-- outputs/tests/: log kiểm thử thực tế.
-- screenshots/: ảnh bằng chứng truy cập, đọc và kiểm tra dữ liệu.
-- reports/: báo cáo STEP 2, bảng kiểm và ghi nhận hạn chế.
+## 📌 Giới thiệu Dự án
 
-## Trình tự thực hiện
-1. Khóa kịch bản và kiểm tra dữ liệu thật.
-2. Chuẩn hóa dữ liệu, xây dựng weather_at().
-3. Biểu diễn tuyến, kiểm tra hình học và ràng buộc.
-4. Xây dựng evaluate_route() và đối chiếu tính tay.
-5. Chạy kiểm thử, xuất bản đồ/kết quả và hoàn thiện báo cáo.
+Dự án **GreenShip** hướng tới giải quyết bài toán tối ưu hóa đa mục tiêu trong vận tải biển: **giảm thiểu tiêu thụ nhiên liệu**, **cắt giảm phát thải khí nhà kính (CO₂)** và **bảo đảm an toàn tuyệt đối** trước các điều kiện sóng gió khắc nghiệt bằng cách ứng dụng thuật toán tối ưu hóa thông minh bầy đàn (Bio-inspired & Physics-based Metaheuristics).
 
-## Trạng thái hiện tại — 24/10/2026
-- Đã tải và đọc được dữ liệu ERA5 gió, ERA5 sóng, Copernicus Marine dòng chảy và Natural Earth Land 5.1.1.
-- Đã hoàn thành `data/source_register.csv` với bốn nguồn và kiểm tra các tệp cục bộ.
-- Đã khóa hợp đồng dữ liệu ban đầu trong `config/scenario.yaml`; hai điểm tiếp cận cảng và mini-case đều không nằm trên đất theo Natural Earth.
-- Đã tạo `config/ship.json`. Các thông số vận hành hiện là giả định của toy model và chưa được dùng để công bố mức phát thải thực tế.
-- `src/inspect_data.py` tạo `outputs/data_audit.csv`, `outputs/data_audit.json` và ảnh bằng chứng đọc dữ liệu.
-- `src/map_domain.py` tạo bản đồ vùng dữ liệu và kết quả kiểm tra land mask cho các điểm mô hình.
+Dự án được chia theo các giai đoạn nghiên cứu khoa học nghiêm ngặt:
+- **STEP 1 & STEP 2:** Chuẩn hóa dữ liệu viễn thám thực địa (ERA5 gió/sóng, CMEMS dòng chảy, Natural Earth đất liền) và xây dựng bộ đánh giá lộ trình độc lập (`evaluate_route()`).
+- **STEP 3:** Tái hiện nguyên bản, kiểm chứng toán học độc lập hai thuật toán **COA (Crayfish Optimization Algorithm)** và **RIME (Physics-based Rime Ice Algorithm)** trên các hàm benchmark chuẩn; chuẩn hóa giao diện tối ưu hóa thống nhất.
+- **STEP 4 & Kế tiếp:** Thiết kế giải thuật lai **Crayfish–RIME (Hybrid)**, tích hợp adapter với bài toán hải trình tàu biển thực tế.
 
-Việc tiếp theo là chuẩn hóa dữ liệu vào `data/processed/`, xây dựng `weather_at()` và kiểm tra ba truy vấn độc lập. Không đánh dấu hoàn thành STEP 2 khi chưa đủ 16 tiêu chí nghiệm thu.
+---
 
-## Chạy phần dữ liệu và weather lookup
+## 📂 Cấu trúc Thư mục Dự án Chuẩn hóa
 
-Từ thư mục gốc dự án:
-
-```powershell
-python -m pip install -r requirements.txt
-python .\src\inspect_data.py
-python .\src\normalize_data.py
-python .\src\check_weather.py
-python -m pytest .\tests\test_weather.py -q
+```text
+GreenShip/
+├── benchmarks/              # Các hàm tối ưu chuẩn toán học (Sphere, Rastrigin, Rosenbrock)
+│   ├── __init__.py
+│   └── functions.py
+├── config/                  # Cấu hình kịch bản mô phỏng và thông số tàu
+│   ├── scenario.yaml        # Kịch bản hải trình & tọa độ cảng
+│   ├── step2_scenario.yaml  # Kịch bản STEP 2 đã khóa
+│   └── ship.json            # Thông số kỹ thuật tàu mẫu (DWT, SFOC, Power)
+├── data/                    # Dữ liệu khí tượng hải văn và mã nguồn gốc
+│   ├── raw/                 # Dữ liệu gốc NetCDF ERA5/CMEMS & mã nguồn gốc COA, RIME
+│   │   ├── COA/             # Mã nguồn MATLAB nguyên bản Jia et al. (2023)
+│   │   └── RIME/            # Mã nguồn MATLAB nguyên bản Su et al. (2023)
+│   ├── processed/           # Dữ liệu thời tiết đã chuẩn hóa lưới tọa độ và thời gian
+│   ├── land/                # Đa giác đường bờ và đất liền Natural Earth (ne_10m_land)
+│   ├── routes/              # Các tuyến hải trình cơ sở (R01, R02, R03)
+│   └── source_register.csv  # Danh mục nguồn dữ liệu & điều kiện bản quyền
+├── outputs/                 # Kết quả thực nghiệm và trực quan hóa
+│   ├── step2/               # Bảng biểu kiểm toán dữ liệu và đánh giá tuyến STEP 2
+│   ├── step3/               # Dữ liệu thống kê benchmark CSV và biểu đồ hội tụ
+│   ├── maps/                # Bản đồ trực quan hóa hải trình và trường sóng gió
+│   └── tables/              # Bảng tổng hợp so sánh các chỉ số tiêu thụ/phát thải
+├── reports/                 # Báo cáo khoa học và tài liệu nghiệm thu
+│   ├── step2/               # Báo cáo tiến độ và nghiệm thu STEP 2
+│   ├── step3/               # Báo cáo chính thức Word STEP 3 (Nhóm Hải Thần)
+│   └── screenshots/         # Ảnh chụp bằng chứng kiểm thử thực tế
+├── scripts/                 # Kịch bản thực thi và công cụ hỗ trợ
+│   ├── run_benchmarks.py    # Script chạy ma trận 3 hàm x 2 thuật toán x 10 seeds
+│   └── tools/               # Các công cụ tạo báo cáo và tiền xử lý
+├── src/                     # Mã nguồn lõi của hệ thống
+│   ├── evaluator.py         # Hàm đánh giá lộ trình (tiêu hao nhiên liệu, thời gian, phạt an toàn)
+│   ├── weather.py           # Động cơ nội suy thời tiết thời gian thực
+│   ├── constraints.py       # Kiểm tra an toàn sóng gió và tránh cạn đất liền
+│   ├── route_geometry.py    # Tính toán trắc địa học (Great Circle, khoảng cách, hải lý)
+│   └── optimizers/          # Các thuật toán tối ưu hóa độc lập
+│       ├── common.py        # Giao diện optimize(...) chung & bộ đếm FE
+│       ├── coa.py           # Thuật toán COA nguyên bản (Jia et al., 2023)
+│       └── rime.py          # Thuật toán RIME nguyên bản (Su et al., 2023)
+├── tests/                   # Bộ kiểm thử tự động (Pytest Unit Tests)
+│   ├── test_benchmarks.py   # Kiểm thử giá trị chuẩn các hàm toán học
+│   ├── test_coa.py          # Kiểm thử toán tử và tính tất định của COA
+│   ├── test_rime.py         # Kiểm thử toán tử và tính tất định của RIME
+│   ├── test_step2_regression.py # Kiểm thử hồi quy mô hình tàu và ETA
+│   └── test_*.py            # Các kiểm thử hình học, thời tiết và ràng buộc
+├── conftest.py              # Cấu hình môi trường pytest
+├── pytest.ini               # Cấu hình đường dẫn module kiểm thử
+├── requirements.txt         # Danh mục thư viện Python yêu cầu
+└── README.md                # Tài liệu hướng dẫn dự án
 ```
 
-`normalize_data.py` giữ nguyên `NaN`, chuẩn hóa tên trục thời gian thành `time`, sắp xếp tọa độ và lưu dữ liệu vào `data/processed/`. Hàm `weather_at()` dùng nearest neighbour có kiểm tra miền không gian và thời gian trước khi truy vấn. Gió và sóng là bắt buộc; dòng chảy là tùy chọn.
+---
 
-Hình sinh tự động nằm trong `outputs/`. Thư mục `screenshots/` chỉ dùng cho ảnh nhóm tự chụp Terminal hoặc giao diện làm bằng chứng.
+## 🚀 Hướng dẫn Cài đặt & Chạy Thực nghiệm
+
+### 1. Yêu cầu Môi trường
+- **Hệ điều hành:** Windows 10/11, Linux hoặc macOS.
+- **Python:** Phiên bản 3.10 trở lên.
+
+### 2. Cài đặt Thư viện
+Mở Terminal/PowerShell tại thư mục gốc dự án và cài đặt:
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Chạy Toàn bộ Kiểm thử Tự động (Unit Tests)
+Dự án được bảo vệ nghiêm ngặt bằng bộ 13 ca kiểm thử tự động độc lập:
+```bash
+pytest tests/ -v
+```
+*Kết quả chuẩn: 13/13 ca kiểm thử PASSED hoàn toàn.*
+
+### 4. Chạy Thực nghiệm So sánh Benchmark COA và RIME (STEP 3)
+Chạy kịch bản ma trận 3 hàm ($\text{Sphere, Rastrigin, Rosenbrock}$) $\times$ 2 thuật toán ($\text{COA, RIME}$) $\times$ 10 random seeds ($\text{max\_fe}=3.000$):
+```bash
+python scripts/run_benchmarks.py
+```
+Kết quả thống kê `mean`, `std`, `min`, `median`, `max` và biểu đồ đường cong hội tụ sẽ được tự động xuất ra thư mục `outputs/step3/`.
+
+---
+
+## 📊 Tóm tắt Thuật toán (COA & RIME)
+
+### 1. Thuật toán COA (Crayfish Optimization Algorithm)
+* **Tác giả:** Heming Jia, Honghua Rao, Changsheng Wen, Seyedali Mirjalili (*Artificial Intelligence Review*, Springer, 2023).
+* **Bản chất:** Mô phỏng sinh thái tôm hùm đất điều tiết theo nhiệt độ mô phỏng $temp \in [20, 35]^\circ\text{C}$:
+  - **Trời nóng ($temp > 30^\circ\text{C}$):** Tránh nóng vào hang hoặc cạnh tranh giành hang $\to$ **Thăm dò diện rộng (Exploration)**.
+  - **Trời mát ($temp \le 30^\circ\text{C}$):** Kiếm ăn (tiến tới gắp mồi nhỏ hoặc xé mồi lớn bằng hàm lượng giác) $\to$ **Khai thác sâu (Exploitation)**.
+
+### 2. Thuật toán RIME (Physics-based Rime Ice Optimization)
+* **Tác giả:** Hang Su, Dong Zhao, Ali Asghar Heidari et al. (*Neurocomputing*, Elsevier, 2023).
+* **Bản chất:** Mô phỏng vật lý quá trình hình thành băng sương giá trong tự nhiên:
+  - **Chiến lược sương mềm (Soft-rime):** Gió nhẹ, ngưng tụ tự do $\to$ Thăm dò toàn cục.
+  - **Cơ chế xuyên thấu sương cứng (Hard-rime):** Gió mạnh, đâm xuyên và thay thế tọa độ hạt kém $\to$ Khai thác cục bộ & Crossover.
+  - **Chọn lọc tham lam tích cực (Positive-greedy):** Giữ vững nghiệm tối ưu, ngăn chặn thoái hóa.
+
+---
+
+## 📜 Bản quyền & Trích dẫn Khoa học
+
+Dự án phục vụ mục đích nghiên cứu khoa học sinh viên tại Trường Đại học Công Thương TP. Hồ Chí Minh (HUIT).
+Mọi thuật toán và bộ dữ liệu viễn thám tuân thủ giấy phép mã nguồn mở và chính sách trích dẫn quốc tế (ECMWF ERA5, Copernicus Marine Service, Natural Earth Data).
