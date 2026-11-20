@@ -44,7 +44,6 @@ GreenShip/
 │   ├── maps/                # Bản đồ trực quan hóa hải trình và trường sóng gió
 │   └── tables/              # Bảng tổng hợp so sánh các chỉ số tiêu thụ/phát thải
 ├── reports/                 # Báo cáo khoa học và tài liệu nghiệm thu
-│   ├── step2/               # Báo cáo tiến độ và nghiệm thu STEP 2
 │   ├── step3/               # Báo cáo chính thức Word STEP 3 (Nhóm Hải Thần)
 │   └── screenshots/         # Ảnh chụp bằng chứng kiểm thử thực tế
 ├── scripts/                 # Kịch bản thực thi và công cụ hỗ trợ
