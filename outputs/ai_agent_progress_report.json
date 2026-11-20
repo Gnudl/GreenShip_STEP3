@@ -1,0 +1,110 @@
+{
+  "timestamp_utc": "2026-11-13T05:33:14.581733+00:00",
+  "project_name": "GreenShip_STEP2",
+  "team_name": "Nhóm Hải Thần",
+  "members": [
+    {
+      "name": "Đặng Long Ngũ",
+      "id": "2001250371",
+      "role": "Khóa kịch bản, hình học tuyến, tích hợp evaluator"
+    },
+    {
+      "name": "Nguyễn Trần Như Nguyệt",
+      "id": "2001250383",
+      "role": "Dữ liệu gió, sóng, dòng chảy, chuẩn hóa & truy vấn thời tiết"
+    },
+    {
+      "name": "Nguyễn Phương Thùy",
+      "id": "2001250557",
+      "role": "Bản đồ đất/biển, phân loại ràng buộc hard/soft, kiểm thử & trực quan hóa"
+    }
+  ],
+  "step_progress": {
+    "step_1": {
+      "name": "Khóa kịch bản và kiểm tra dữ liệu thật",
+      "status": "HOÀN THÀNH",
+      "progress_pct": 100
+    },
+    "step_2": {
+      "name": "Chuẩn hóa dữ liệu, xây dựng weather_at()",
+      "status": "HOÀN THÀNH",
+      "progress_pct": 100
+    },
+    "step_3": {
+      "name": "Biểu diễn tuyến, kiểm tra hình học và ràng buộc",
+      "status": "HOÀN THÀNH",
+      "progress_pct": 100
+    },
+    "step_4": {
+      "name": "Xây dựng evaluate_route() và đối chiếu tính tay",
+      "status": "HOÀN THÀNH",
+      "progress_pct": 100
+    },
+    "step_5": {
+      "name": "Chạy kiểm thử, xuất bản đồ/kết quả và hoàn thiện báo cáo",
+      "status": "HOÀN THÀNH",
+      "progress_pct": 100
+    }
+  },
+  "overall_progress_pct": 100,
+  "route_results": [
+    {
+      "route_id": "R01",
+      "route_name": "Coastal baseline candidate",
+      "distance_nm": 779.602436,
+      "duration_h": 62.688977,
+      "estimated_fuel_t": 59.554528,
+      "estimated_co2_t": 185.4528,
+      "feasible": true,
+      "hard_violation_count": 0,
+      "soft_violation_count": 0,
+      "violation_codes": "Không",
+      "fitness": 59.554528,
+      "result_note": "Tuyến thử khả thi; chưa phải tuyến tối ưu."
+    },
+    {
+      "route_id": "R02",
+      "route_name": "Deliberate land-crossing test",
+      "distance_nm": 631.374883,
+      "duration_h": 52.371921,
+      "estimated_fuel_t": 49.753325,
+      "estimated_co2_t": 154.931853,
+      "feasible": false,
+      "hard_violation_count": 91,
+      "soft_violation_count": 0,
+      "violation_codes": "LAND_CROSSING; MANDATORY_WEATHER_INVALID",
+      "fitness": null,
+      "result_note": "Tuyến thử không khả thi; không dùng để so sánh lợi ích."
+    },
+    {
+      "route_id": "R03",
+      "route_name": "Offshore alternative candidate",
+      "distance_nm": 822.731387,
+      "duration_h": 68.036151,
+      "estimated_fuel_t": 64.634344,
+      "estimated_co2_t": 201.271346,
+      "feasible": true,
+      "hard_violation_count": 0,
+      "soft_violation_count": 1,
+      "violation_codes": "EXCESSIVE_DETOUR",
+      "fitness": 64.634344,
+      "result_note": "Tuyến thử khả thi; chưa phải tuyến tối ưu."
+    }
+  ],
+  "step_5_summary": {
+    "total_pytest_tests": 36,
+    "tests_passed": 36,
+    "all_passed": true,
+    "minimum_tests_required": 10,
+    "generated_maps": [
+      "outputs/maps/map_domain.png",
+      "outputs/maps/manual_routes.png"
+    ],
+    "generated_tables": [
+      "outputs/tables/route_results.csv",
+      "outputs/tables/route_results.png"
+    ],
+    "acceptance_criteria_met": "16/16",
+    "ready_for_step_3": true
+  }
+}

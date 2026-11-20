@@ -1,0 +1,286 @@
+=== PARAGRAPHS ===
+P0: NGHIÊN CỨU KHOA HỌC SINH VIÊN
+P1: MẪU BÁO CÁO STEP 3
+P2: Bổ sung STEP 2 và tái hiện độc lập COA – RIME
+P3: Đề tài: Tối ưu lộ trình hàng hải xanh thích ứng thời tiết sử dụng thuật toán lai Crayfish–RIME
+P4: Nhóm: Hải Thần  |  Mã biểu mẫu: BM-03  |  Phiên bản báo cáo: [Nhóm tự điền]
+P5: QUY ĐỊNH BẮT BUỘC VỀ VIỆC SỬ DỤNG AI
+P6: Nhóm được sử dụng AI để hỗ trợ nghiên cứu: tìm từ khóa, đọc hiểu tài liệu, gợi ý phương pháp, giải thích công thức, hỗ trợ lập trình và kiểm tra lỗi. Tuy nhiên, TOÀN BỘ nội dung viết trong báo cáo phải xuất phát từ sự hiểu biết của nhóm và do các thành viên tự viết lại bằng lời của mình. Không chép nguyên câu trả lời AI vào báo cáo. Mọi công thức, mã nguồn, số liệu và kết luận phải được nhóm tự đối chiếu tài liệu gốc hoặc kiểm chứng bằng chương trình; phải giải thích được khi giảng viên hỏi. AI không phải tài liệu khoa học thay cho nguồn gốc.
+P7: Mục nào chưa làm xong phải ghi “CHƯA HOÀN THÀNH” và nêu lý do, không tự điền số liệu dự kiến thành số liệu thực nghiệm. Không trình bày kết quả COA–RIME hybrid hay tuyến hàng hải tối ưu như thể đã thực hiện trong STEP 3.
+P8: A. Thông tin nhóm và trách nhiệm
+P9: A1. Bảng thành viên và công việc thực hiện
+P11: B. Hoàn thiện STEP 2 – Báo cáo sửa lỗi có minh chứng
+P12: B1. Mỗi hàng phải có vấn đề, file sửa, lý do và bằng chứng chạy lại. Không viết “đã sửa” nếu không có test hoặc log.
+P14: B2. Quyết định chốt của nhóm về ràng buộc sóng: hard hay soft? Vì sao phù hợp với mô hình nền?
+P15: Nhóm chốt sort. 
+P16: Vì đặc thù của mô hình tối thiểu ở step2: Mô hình tàu hiện tại đang giữ tốc độ qua nước () và công suất máy () cố định; chưa tích hợp hàm truyền sức cản sóng bổ sung (added wave resistance) và chưa có cơ chế giảm tốc tự động theo sóng gió. Nếu chọn Hard thì một vùng sóng lớn cục bộ sẽ đánh rớt toàn bộ các tuyến đi qua (trả về feasible = False, fitness = None), làm co hẹp không gian tìm kiếm quá mức và khiến thuật toán tối ưu hóa rất dễ rơi vào trạng thái bế tắc (không tìm ra lời giải khả thi).
+P17: B3. Mô hình fuel/CO₂ hiện tại có gì, chưa có gì? Những phát biểu nào nhóm sẽ không tuyên bố khi viết bài báo?
+P18: 1. Mô hình fuel/CO₂ hiện tại có gì:
+P19: Tính toán cố định, chia nhỏ theo từng đoạn. Mỗi lần chạy với cùng đầu vào đều cho cùng kết quả. Hành trình được chia thành các đoạn trắc địa WGS84 dài tối đa 5 NM (hải lý). Thời gian và nhiên liệu được cộng dồn riêng cho từng đoạn.
+P20: Có xét dòng chảy dọc tuyến. Tốc độ qua đất (SOG) được hiệu chỉnh theo dòng chảy bề mặt đại dương từ Copernicus Marine: 
+P21: Trong đó STW là tốc độ của tàu so với nước, còn  là hình chiếu của vector dòng chảy () lên hướng đi của tàu.
+P22: Tính thời gian từng đoạn. t = d / SOG (giờ). Thuật toán có chốt kiểm tra an toàn và sẽ dừng nếu dòng ngược làm SOG ≤ 0 (lỗi NON_POSITIVE_SOG).
+P23: Công thức nhiên liệu cơ sở. Dùng công suất máy chính cố định P = 5.000 kW và suất tiêu hao nhiên liệu riêng cố định SFOC = 190 g/kWh:
+P26: Trong đó Δt là thời gian từng đoạn và T là tổng thời gian hành trình (giờ).
+P27: Ước tính CO₂ theo kiểu Tank-to-Wake (chỉ tính khí thải từ ống khói). Quy đổi từ nhiên liệu bằng hệ số phát thải chuẩn của dầu nặng HFO:
+
+P28: Kiểm tra đơn vị chặt chẽ. Hệ thống tự kiểm tra đơn vị đầu vào (kn, kW, g/kWh, tCO₂/t-fuel) trước khi tính.
+P29: 2. Mô hình fuel/CO₂ hiện tại chưa có gì:
+P31: C. Kiểm chứng dữ liệu và hồi quy STEP 2
+P32: C1. Đối chiếu ETA cuối, coverage và kết quả xử lý dữ liệu thiếu
+P34: C2. Thử nghiệm độ nhạy bước lấy mẫu (2,5 / 5 / 10 NM)
+P36: C3. Thử nghiệm bán kính truy vấn sóng (10 / 20 / 30 NM)
+P38: C4. Minh chứng trực quan: chèn ảnh bản đồ phủ Hs (có ngày giờ UTC, đơn vị, nguồn) và tên file ảnh.
+P39: ...................................................................................................................................
+P40: ...................................................................................................................................
+P41: ...................................................................................................................................
+P42: ...................................................................................................................................
+P43: C5. Tên commit/tag cố định STEP 2, cách chạy lại và kết quả kiểm tra chéo:
+P44: ...................................................................................................................................
+P45: ...................................................................................................................................
+P46: ...................................................................................................................................
+P47: D. Tìm hiểu và diễn giải thuật toán COA nguyên bản
+P48: D1. Tài liệu gốc đã đọc: tác giả, năm, DOI, trang/phương trình, URL mã nguồn và giấy phép nếu có.
+P49: ...................................................................................................................................
+P50: ...................................................................................................................................
+P51: ...................................................................................................................................
+P52: D2. Nhóm tự viết cách COA tìm kiếm nghiệm; giải thích biến nhiệt độ mô phỏng, best hiện tại/toàn cục và ý nghĩa mỗi pha.
+P53: ...................................................................................................................................
+P54: ...................................................................................................................................
+P55: ...................................................................................................................................
+P56: ...................................................................................................................................
+P58: D3. Ghi lại các công thức chính (chèn Equation Word), ký hiệu và phần giải thích do nhóm tự viết:
+P59: ...................................................................................................................................
+P60: ...................................................................................................................................
+P61: ...................................................................................................................................
+P62: ...................................................................................................................................
+P63: D4. Sơ đồ hoặc pseudocode do nhóm tự xây dựng; chỉ rõ bất kỳ chỗ nào khác bài gốc:
+P64: ...................................................................................................................................
+P65: ...................................................................................................................................
+P66: ...................................................................................................................................
+P67: ...................................................................................................................................
+P68: E. Tìm hiểu và diễn giải thuật toán RIME nguyên bản
+P69: E1. Tài liệu gốc đã đọc: tác giả, năm, DOI, trang/phương trình, URL mã nguồn và giấy phép nếu có.
+P70: ...................................................................................................................................
+P71: ...................................................................................................................................
+P72: ...................................................................................................................................
+P73: E2. Nhóm tự viết cách RIME tìm kiếm nghiệm, giải thích soft-rime, hard-rime và greedy selection.
+P74: ...................................................................................................................................
+P75: ...................................................................................................................................
+P76: ...................................................................................................................................
+P77: ...................................................................................................................................
+P79: E3. Ghi lại công thức chính dưới dạng Equation Word; giải thích ký hiệu, xác suất và ranh giới:
+P80: ...................................................................................................................................
+P81: ...................................................................................................................................
+P82: ...................................................................................................................................
+P83: ...................................................................................................................................
+P84: E4. Sơ đồ hoặc pseudocode do nhóm tự xây dựng; các sai khác so với thuật toán gốc:
+P85: ...................................................................................................................................
+P86: ...................................................................................................................................
+P87: ...................................................................................................................................
+P88: ...................................................................................................................................
+P89: F. Thiết kế chung và kiểm thử các hàm benchmark
+P90: F1. Đặc tả optimize(objective, bounds, population_size, max_fe, seed):
+P92: F2. Liệt kê benchmark, miền tìm kiếm, số chiều, nghiệm tối ưu đã biết và test tính đúng:
+P94: F3. Kế hoạch đếm FE và giới hạn seed, boundary handling, lựa chọn nghiệm tốt nhất:
+P95: ...................................................................................................................................
+P96: ...................................................................................................................................
+P97: ...................................................................................................................................
+P98: G. Kiểm chứng COA độc lập
+P99: G1. Cấu trúc code và đường dẫn module; phiên bản bài gốc mà nhóm đã đối chiếu:
+P100: ...................................................................................................................................
+P101: ...................................................................................................................................
+P103: G2. Trích một trace ngắn N=4, D=2: temperature, operator, fitness trước/sau và best-so-far:
+P104: ...................................................................................................................................
+P105: ...................................................................................................................................
+P106: ...................................................................................................................................
+P107: G3. Hình convergence trên Sphere và nhận xét do nhóm tự rút ra từ kết quả chạy:
+P108: ...................................................................................................................................
+P109: ...................................................................................................................................
+P110: ...................................................................................................................................
+P111: ...................................................................................................................................
+P112: H. Kiểm chứng RIME độc lập
+P113: H1. Cấu trúc code và đường dẫn module; phiên bản bài gốc mà nhóm đã đối chiếu:
+P114: ...................................................................................................................................
+P115: ...................................................................................................................................
+P117: H2. Trích một trace ngắn N=4, D=2: operator, xác suất, fitness trước/sau và best-so-far:
+P118: ...................................................................................................................................
+P119: ...................................................................................................................................
+P120: ...................................................................................................................................
+P121: H3. Hình convergence trên Sphere và nhận xét do nhóm tự rút ra từ kết quả chạy:
+P122: ...................................................................................................................................
+P123: ...................................................................................................................................
+P124: ...................................................................................................................................
+P125: ...................................................................................................................................
+P126: I. Thực nghiệm so sánh độc lập
+P127: I1. Cấu hình thống nhất đã sử dụng và minh chứng có cùng ngân sách FE:
+P129: I2. Kết quả tổng hợp 3 benchmark × 2 thuật toán (ít nhất 10 seed):
+P131: I3. Chèn biểu đồ convergence theo FE; đánh dấu tên ảnh và giải thích xu hướng, KHÔNG suy diễn tính vượt trội khi chưa đủ số lần chạy:
+P132: ...................................................................................................................................
+P133: ...................................................................................................................................
+P134: ...................................................................................................................................
+P135: ...................................................................................................................................
+P136: I4. Hai trường hợp thuật toán hoạt động chưa tốt, lý do nhóm suy luận từ log và dự kiến xử lý:
+P137: ...................................................................................................................................
+P138: ...................................................................................................................................
+P139: ...................................................................................................................................
+P140: J. Chuẩn bị adapter cho giai đoạn tiếp theo
+P141: J1. Định nghĩa số waypoint K dự kiến, cách mã hóa vector [lon,lat], bounds và cơ chế phát hiện/cải tạo tuyến không khả thi. Chưa chạy hybrid trong STEP 3.
+P142: ...................................................................................................................................
+P143: ...................................................................................................................................
+P144: ...................................................................................................................................
+P145: ...................................................................................................................................
+P146: J2. Chỉ ra dữ liệu/thành phần mô hình chưa đủ để khẳng định tối ưu nhiên liệu thích ứng sóng/gió:
+P147: ...................................................................................................................................
+P148: ...................................................................................................................................
+P149: ...................................................................................................................................
+P150: K. Minh chứng tái lập, sử dụng AI và tài liệu tham khảo
+P151: K1. Repository, commit hash, Python version, requirements, lệnh chạy, thư mục lưu log, danh sách file ảnh và số liệu:
+P153: K2. Nhật ký sử dụng AI hỗ trợ nghiên cứu (có thể ghi “không sử dụng”):
+P155: K3. Tài liệu tham khảo thực sự đã đọc; ghi DOI/URL và số trang/phương trình được dùng:
+P157: L. Checklist STEP 3 và tự đánh giá
+P158: Chỉ đánh dấu sau khi đã chạy và có bằng chứng. Nếu chưa đạt phải ghi lý do, người phụ trách và ngày dự kiến sửa.
+P160: L1. Nhóm tự đánh giá: số tiêu chí đạt / tổng số, các mục chưa hoàn thành, đề nghị chuyển bước hay chưa:
+P161: ...................................................................................................................................
+P162: ...................................................................................................................................
+P163: ...................................................................................................................................
+P164: L2. Các câu hỏi nhóm muốn hỏi thầy, phải gắn với mã nguồn/kết quả cụ thể:
+P165: ...................................................................................................................................
+P166: ...................................................................................................................................
+P167: ...................................................................................................................................
+
+=== TABLES ===
+
+--- Table 0 (4 rows x 4 cols) ---
+Row 0: Thành viên | Việc đã làm (file/code) | Người kiểm tra chéo | Bằng chứng
+Row 1: Đặng Long Ngũ | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: Nguyễn Trần Như Nguyệt | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: Nguyễn Phương Thùy | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 1 (7 rows x 4 cols) ---
+Row 0: Mã | Vấn đề cần hoàn thiện | Cách nhóm sửa | File/test/log
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 5: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 6: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 2 (5 rows x 4 cols) ---
+Row 0: Test ID | Dữ liệu vào / kỳ vọng | Kết quả thực tế | PASS/FAIL, log
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 3 (4 rows x 5 cols) ---
+Row 0: Bước (NM) | Distance (NM) | Time (h) | Fuel (t) | Invalid / Runtime
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 4 (4 rows x 4 cols) ---
+Row 0: Bán kính | Số truy vấn hợp lệ | Trường hợp bị đất ngăn | Nhận xét
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 5 (4 rows x 4 cols) ---
+Row 0: Operator COA | Khi nào kích hoạt? | Cập nhật nghiệm ra sao? | Dẫn phương trình gốc
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 6 (4 rows x 4 cols) ---
+Row 0: Operator RIME | Khi nào kích hoạt? | Cập nhật nghiệm ra sao? | Dẫn phương trình gốc
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 7 (7 rows x 3 cols) ---
+Row 0: Đầu vào / đầu ra | Kiểu / đơn vị / ý nghĩa | Cách nhóm kiểm tra
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 5: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 6: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 8 (4 rows x 4 cols) ---
+Row 0: Hàm | D / bounds | Nghiệm chuẩn | Test và log
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 9 (5 rows x 4 cols) ---
+Row 0: Test ID / Operator | Input và điều kiện nhánh | Kết quả / FE | PASS/FAIL, file log
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 10 (5 rows x 4 cols) ---
+Row 0: Test ID / Operator | Input và điều kiện nhánh | Kết quả / FE | PASS/FAIL, file log
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 11 (7 rows x 2 cols) ---
+Row 0: Tham số | Giá trị thực tế / nguồn cấu hình
+Row 1: [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền]
+Row 5: [Nhóm tự điền] | [Nhóm tự điền]
+Row 6: [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 12 (7 rows x 5 cols) ---
+Row 0: Hàm / thuật toán | Mean | Std | Min / Median | Max / FE
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 5: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 6: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 13 (6 rows x 3 cols) ---
+Row 0: Hạng mục | Đường dẫn / phiên bản | Người đã chạy lại
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 5: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 14 (4 rows x 4 cols) ---
+Row 0: Công cụ AI | Nội dung được hỗ trợ | Nhóm đã kiểm chứng thế nào? | Ai chịu trách nhiệm?
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 15 (5 rows x 3 cols) ---
+Row 0: Nguồn | Nội dung đã sử dụng | Trang / phương trình / DOI
+Row 1: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 2: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 3: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+Row 4: [Nhóm tự điền] | [Nhóm tự điền] | [Nhóm tự điền]
+
+--- Table 16 (18 rows x 4 cols) ---
+Row 0: Mã | Yêu cầu | Đã đạt? | File chứng minh
+Row 1: A01 | Có changelog khắc phục STEP 2 và commit/tag phiên bản evaluator. | ☐ | [Nhóm tự điền]
+Row 2: A02 | power=0 và power<0 bị xử lý đúng trong mô hình đã chọn. | ☐ | [Nhóm tự điền]
+Row 3: A03 | ETA cuối được kiểm tra với coverage dữ liệu bắt buộc. | ☐ | [Nhóm tự điền]
+Row 4: A04 | Quy tắc sóng ven bờ, NaN và phạm vi tìm ô nhất quán; có test. | ☐ | [Nhóm tự điền]
+Row 5: A05 | Cấu hình [lon, lat] và số waypoint nhất quán; có validator. | ☐ | [Nhóm tự điền]
+Row 6: A06 | Có bảng độ nhạy bước mẫu và bán kính tìm ô, bản đồ Hs/UTC và README. | ☐ | [Nhóm tự điền]
+Row 7: B01 | Đã đọc và đối chiếu đúng bài báo gốc của COA và RIME. | ☐ | [Nhóm tự điền]
+Row 8: B02 | Có bảng mô tả rõ operator và phương trình/trang nguồn của mỗi thuật toán. | ☐ | [Nhóm tự điền]
+Row 9: B03 | Có giao diện optimize(objective,bounds,N,FE,seed) chung. | ☐ | [Nhóm tự điền]
+Row 10: B04 | Có kiểm thử benchmark tính giá trị đúng tại nghiệm chuẩn. | ☐ | [Nhóm tự điền]
+Row 11: B05 | COA độc lập triển khai đủ nhánh, có trace và unit tests. | ☐ | [Nhóm tự điền]
+Row 12: B06 | RIME độc lập triển khai đủ nhánh, có trace và unit tests. | ☐ | [Nhóm tự điền]
+Row 13: B07 | Mọi nghiệm đều nằm trong bounds; best_f và FE được kiểm chứng. | ☐ | [Nhóm tự điền]
+Row 14: B08 | 3 hàm × 2 thuật toán × ≥10 seed có bảng kết quả và convergence. | ☐ | [Nhóm tự điền]
+Row 15: B09 | Có README cho phép chạy lại và ghi môi trường/phần mềm, dữ liệu đầu vào. | ☐ | [Nhóm tự điền]
+Row 16: B10 | Có phác thảo adapter vector → waypoint → evaluate_route() nhưng chưa lẫn với thuật toán lai. | ☐ | [Nhóm tự điền]
+Row 17: B11 | Ba sinh viên trình bày và giải thích được code/test do nhóm viết. | ☐ | [Nhóm tự điền]

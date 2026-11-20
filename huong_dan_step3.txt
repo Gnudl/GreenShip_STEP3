@@ -1,0 +1,208 @@
+=== PARAGRAPHS ===
+P0: NGHIÊN CỨU KHOA HỌC SINH VIÊN
+P1: HƯỚNG DẪN THỰC HIỆN STEP 3
+P2: Hoàn thiện STEP 2 • Kiểm chứng độc lập COA và RIME • Chuẩn bị giao diện tối ưu
+P3: Đề tài: Tối ưu lộ trình hàng hải xanh thích ứng thời tiết sử dụng thuật toán lai Crayfish–RIME
+P4: Nhóm thực hiện: Hải Thần  |  Tài liệu hướng dẫn của giảng viên  |  Phiên bản: 13/11/2026
+P5: Nguyên tắc: STEP 3 chưa yêu cầu tạo thuật toán lai COA–RIME hay công bố mức tiết kiệm nhiên liệu. Phải kiểm chứng độc lập từng thuật toán trước khi tích hợp với evaluator của tàu.
+P6: I. Mục đích, phạm vi và chuẩn đầu ra
+P7: STEP 3 có hai hợp phần bắt buộc. Phần A khắc phục các điểm còn tồn tại của STEP 2, đóng băng một phiên bản evaluate_route() cơ bản có kiểm thử. Phần B tái hiện nguyên bản COA và RIME dưới một giao diện tối ưu chung và đánh giá trên các hàm benchmark. Đây là điều kiện để nghiên cứu cơ chế lai ở bước kế tiếp.
+P9: II. Những vấn đề còn lại của STEP 2 và cách hoàn thiện
+P10: A1. Chốt công suất vận hành dương và kiểm thử đầu vào
+P11: Nhóm đã làm đúng khi dùng power = −1 kW làm dữ liệu kiểm thử bất hợp lệ (T09). Cần bổ sung riêng power = 0 kW: trong mô hình tàu chạy động cơ với STW dương, công suất vận hành phải dương.
+P13: 1. Mở src/evaluator.py, tìm nơi xác thực ship["service_power_kw"] hoặc khóa tương đương; loại nhánh cho phép bằng 0 trong chế độ tàu động cơ đã chọn.
+P14: 2. Không đổi các tham số tàu đang dùng để tính R01/R03 (5.000 kW, SFOC 190 g/kWh, STW 12 kn), vì đây là cấu hình mẫu được ghi giả định.
+P15: 3. Thêm unit test power = −1 (bảo toàn T09); power = 0 (mới); power > 0 (hợp lệ). Mọi trường hợp không hợp lệ phải có trạng thái/exception nhất quán, không trả một fitness hợp lệ.
+P16: 4. Chạy regression suite; lưu diff mã nguồn và kết quả pytest.
+P17: # Minh họa bổ sung validation (tên khóa theo mã nguồn thực tế)
+P18: def validate_ship(ship):
+P19:     if float(ship["service_power_kw"]) <= 0:
+P20:         raise ValueError("service_power_kw must be > 0")
+P21:     if float(ship["sfoc_g_kwh"]) <= 0:
+P22:         raise ValueError("sfoc_g_kwh must be > 0")
+P24: Lưu ý: Đoạn code là ví dụ hướng dẫn, nhóm thay đổi theo đúng code của mình.
+P25: A2. Kiểm tra ETA cuối và thời gian bao phủ dữ liệu
+P26: Báo cáo hiện tự ghi “điểm đích cuối chưa được truy vấn thời tiết riêng”. Nhóm phải bảo đảm hành trình không vượt phạm vi thời gian của nguồn thời tiết bắt buộc. Nếu dùng lookup ở đầu sample, cần kiểm riêng ETA cuối; không được tự ngầm hiểu dữ liệu vẫn hợp lệ sau giờ cuối cùng.
+P28: 1. Xác định coverage bắt đầu/kết thúc của gió và sóng tại dạng UTC, ghi rõ cả hai mốc thời gian.
+P29: 2. Sau khi tính toàn tuyến, kiểm tra ETA nằm trong khoảng được hỗ trợ. Nếu dùng nội suy thời gian, ghi rõ yêu cầu dữ liệu ở hai đầu cửa sổ; nếu chỉ nearest-time, quy định dung sai một cách tường minh.
+P30: 3. Nếu ETA vượt coverage, trả feasible=False, fitness=None và mã lý do riêng, ví dụ WEATHER_TIME_OUT_OF_RANGE.
+P31: 4. Thêm ba test: ETA trước cuối dữ liệu; ETA đúng ngưỡng (nêu quy ước); ETA sau cuối dữ liệu. Ghi rõ cách xử lý dữ liệu dòng chảy tùy chọn.
+P32: def check_arrival_coverage(eta_utc, mandatory_end_utc):
+P33:     if eta_utc > mandatory_end_utc:
+P34:         return False, "WEATHER_TIME_OUT_OF_RANGE"
+P35:     return True, None
+P37: A3. Chốt quy tắc sóng ven bờ và dữ liệu thiếu
+P38: Báo cáo có chỗ nói đã tìm được ô sóng hữu hạn trong 30 NM, nhưng mục J1 còn viết chưa có quy tắc tìm ô lân cận. Nhóm phải căn cứ vào phiên bản code cuối cùng và sửa thống nhất cả hai vị trí. Không thay NaN bằng 0. Tỷ lệ missing trên toàn bounding box không được xem là tỷ lệ missing dọc lộ trình.
+P39: 1. Gọi weather_at() tại ít nhất 3 điểm biển và 2 điểm ven bờ; lưu tọa độ, UTC, biến, ô nguồn, khoảng cách đến ô nguồn, selection_method và valid.
+P40: 2. Nếu điểm gần nhất thiếu Hs: tìm ô hữu hạn cùng time trong bán kính R=30 NM, nhưng không được chọn ô có đường kết nối cắt polygon đất. Cơ chế kiểm này là xấp xỉ bảo thủ, chưa thay thế hải đồ.
+P41: 3. Nếu không có nguồn hợp lệ, trả valid=False với lý do; không đưa điểm thiếu vào fitness như thời tiết tốt.
+P42: 4. Chạy độ nhạy R=10, 20, 30 NM, báo tỷ lệ truy vấn hợp lệ và các trường hợp thay đổi kết quả. Không cần hiệu chuẩn mô hình hải dương ở STEP 3.
+P43: Lưu ý: R=30 NM là giả định kỹ thuật của nhóm. Nếu kiểm liên thông địa lý bằng đường thẳng chưa đủ cho các vùng cửa vịnh phức tạp, phải ghi rõ giới hạn và kiểm thử thêm một trường hợp bị đất ngăn.
+P44: A4. Thống nhất cấu hình tọa độ và số waypoint
+P45: Tất cả biểu diễn và API công khai của route thống nhất thứ tự [longitude, latitude] theo WGS84. Các thư viện địa lý có thể nhận (lat, lon); việc chuyển đổi phải làm rõ tại ranh giới gọi hàm. Các tuyến thử nghiệm R01/R02/R03 không bắt buộc có cùng số waypoint, còn thuật toán tối ưu sau này sẽ phải cố định số chiều nghiệm.
+P46: 1. Mở config/scenario.yaml, data/routes/manual_routes.json, src/route_geometry.py; lập bảng thứ tự tọa độ mỗi chỗ và số waypoint. Ghi chính xác một cấu hình chuẩn.
+P47: 2. Không dùng intermediate_waypoint_count=2 để mô tả R01 có 9 waypoint trung gian. Tách “manual_route_count” và “optimization_waypoint_count” (nếu cần).
+P48: 3. Tạo validator longitude thuộc [−180,180], latitude thuộc [−90,90], route có ít nhất 2 điểm, điểm đầu–cuối hợp lệ; test đổi nhầm thứ tự tọa độ và đếm waypoint.
+P49: 4. Chạy lại R01/R02/R03 và chụp bản đồ để xác nhận không phát sinh thay đổi ngoài mong muốn.
+P50: A5. Tài liệu, mô hình nền và nghiệm thu STEP 2
+P51: Mô hình hiện tại sử dụng công suất/SFOC cố định, dòng chảy chiếu dọc hướng di chuyển; sóng/gió chủ yếu phục vụ kiểm tra tính khả thi và cảnh báo. Điều này được phép ở STEP 2 với nhãn “mô hình ước tính đơn giản”, nhưng phải phân biệt với mô hình nhiên liệu phụ thuộc sóng/gió dùng cho nghiên cứu tối ưu sau này.
+P54: Với HFO, có thể đối chiếu CF = 3,114 tCO₂/t nhiên liệu theo bảng hệ số quy đổi được IMO công bố (xem nguồn [3] cuối tài liệu). SFOC, công suất và vận tốc của tàu mẫu vẫn cần ghi là giả định nếu chưa có tài liệu xác nhận cho tàu cụ thể.
+P55: 1. Giữ chính sách về sóng minh bạch: hoặc ngưỡng sóng là hard constraint (để loại tuyến vượt ngưỡng), hoặc soft violation có hình thức xử lý rõ ràng. Không ghi “đã phạt vào fitness” khi code chưa làm.
+P56: 2. Chạy thử sampling 2,5 / 5 / 10 NM, so sánh distance, duration, fuel, số điểm invalid và runtime; phân biệt lỗi mô hình với sai số do lấy mẫu.
+P57: 3. Vẽ trường Hs theo một mốc UTC thật lên bản đồ tuyến nếu dữ liệu đã có; ghi chú không dùng bản đồ này để dẫn đường thực tế.
+P58: 4. Cập nhật README, hình minh chứng, checklist 16 tiêu chí và báo cáo kiểm tra chéo của ít nhất hai thành viên; lưu tag/commit “step2-locked”.
+P61: III. STEP 3 – Tái hiện COA và RIME độc lập theo quy trình nghiên cứu
+P62: Nhiệm vụ 3.1 – Đọc thuật toán gốc và lập bảng operator
+P63: Đọc tối thiểu hai bài báo gốc: Jia et al. (2023) về COA và Su et al. (2023) về RIME. Phân biệt rõ hành vi mô phỏng và phép cập nhật nghiệm thực tế. Không được tự đặt công thức rồi tuyên bố đó là COA/RIME nguyên bản.
+P64: 1. Mỗi thành viên đọc abstract, flowchart/pseudocode, phương trình cập nhật, điều kiện nhánh và tham số. Một người trình bày, người khác kiểm tra lại bằng bài báo.
+P65: 2. Với COA, lập bảng summer resort, competition, foraging: điều kiện kích hoạt, biến sử dụng, mẫu cập nhật, ảnh hưởng đến phạm vi tìm kiếm. Chú ý bài gốc phân biệt các giai đoạn theo biến nhiệt độ mô phỏng.
+P66: 3. Với RIME, lập bảng soft-rime search, hard-rime puncture và greedy selection: xác suất/điều kiện kích hoạt, vai trò best, cập nhật ranh giới.
+P67: 4. Lưu riêng trang/phương trình nguồn của từng operator; nếu dùng mã tác giả để đối chiếu thì ghi URL, giấy phép, phiên bản và thay đổi khi chuyển sang Python.
+P68: 5. Lập một sơ đồ luồng chạy của mỗi thuật toán bằng chính cách hiểu của nhóm, không chép nguyên ảnh và không dùng mô tả AI chưa kiểm chứng.
+P70: Lưu ý: Tuyệt đối không gán cứng “COA chỉ exploration, RIME chỉ exploitation”. Mỗi thuật toán có nhiều operator với tác động khác nhau. Muốn phát triển Q-learning sau này, nhóm phải ghi log theo operator.
+P71: Nhiệm vụ 3.2 – Xây dựng giao diện tối ưu chung và ngân sách FE
+P72: Đây là phần phải làm trước khi viết COA/RIME. Cả hai thuật toán nhận cùng kiểu objective, bounds, số cá thể, ngân sách đánh giá và seed; trả về best_x, best_f, convergence theo FE, số lần đánh giá thực tế. Không để benchmark khác nhau dùng tiêu chí dừng khác nhau.
+P74: # Giao diện thống nhất (nhóm tự triển khai nội dung hai thuật toán)
+P75: def optimize_coa(objective, bounds, population_size,
+P76:                  max_fe, seed):
+P77:     # TODO: cập nhật theo COA gốc, không viết thuật toán khác
+P78:     raise NotImplementedError
+P80: def optimize_rime(objective, bounds, population_size,
+P81:                   max_fe, seed):
+P82:     # TODO: cập nhật theo RIME gốc
+P83:     raise NotImplementedError
+P85: Một lần gọi objective(x) tính một FE. Nếu optimizer tính lại cá thể cũ, lần tính lại vẫn tính vào FE (trừ khi có cache và cả hai thuật toán dùng cùng quy tắc được công bố). Vẽ convergence theo FE thay vì chỉ theo iteration.
+P86: class CountedObjective:
+P87:     def __init__(self, fn, budget):
+P88:         self.fn, self.budget, self.fe = fn, budget, 0
+P90:     def __call__(self, x):
+P91:         if self.fe >= self.budget:
+P92:             raise RuntimeError("FE budget exhausted")
+P93:         self.fe += 1
+P94:         return float(self.fn(x))
+P96: 1. Viết benchmark.py chứa các hàm và bounds; objective không được có random.
+P97: 2. Viết counted_objective và recorder lưu best_f sau các mốc FE; không đếm FE bằng số vòng lặp × N nếu có nhánh tạo thêm nghiệm.
+P98: 3. Viết test cho max_fe, nghiệm nằm trong bounds và best_f chính là f(best_x) (tính lại để kiểm chứng độc lập, không đưa lần này vào FE thuật toán).
+P99: 4. Dùng numpy.random.default_rng(seed) theo từng lượt chạy, seed được lưu vào file kết quả.
+P100: Nhiệm vụ 3.3 – Kiểm thử hàm benchmark trước khi triển khai thuật toán
+P101: Để giảm rủi ro, chỉ sử dụng 3 hàm đơn giản nhưng đại diện: Sphere (unimodal), Rastrigin (đa cực trị) và Rosenbrock (thung lũng hẹp). Giai đoạn đầu D=10; D=30 là mở rộng nếu nhóm hoàn thành sớm.
+P106: import numpy as np
+P108: def sphere(x):
+P109:     x = np.asarray(x, dtype=float)
+P110:     return float(np.sum(x*x))
+P112: def rastrigin(x):
+P113:     x = np.asarray(x, dtype=float)
+P114:     return float(10*len(x) + np.sum(x*x - 10*np.cos(2*np.pi*x)))
+P116: def rosenbrock(x):
+P117:     x = np.asarray(x, dtype=float)
+P118:     return float(np.sum(100*(x[1:] - x[:-1]**2)**2
+P119:                         + (x[:-1] - 1)**2))
+P121: Lưu ý: Đây là ba benchmark kinh điển, không phải dữ liệu thực địa. Mục tiêu của bước này là xác nhận việc cài đặt COA/RIME đúng về số học và hành vi hội tụ cơ bản.
+P122: Nhiệm vụ 3.4 – Triển khai COA nguyên bản
+P123: 1. Tạo src/optimizers/coa.py. Chuẩn hóa khởi tạo X trong bounds, tính fitness, lưu global best và current-population best đúng định nghĩa bài gốc.
+P124: 2. Cài từng operator thành hàm riêng (summer_resort, competition, foraging); điều kiện temperature/rand/Q phải khớp bài gốc, không tự sửa để “chạy tốt hơn”.
+P125: 3. Giữ một bản log một iteration nhỏ (N=4, D=2) gồm nhiệt độ mô phỏng, operator kích hoạt, best trước/sau, số FE tăng thêm.
+P126: 4. Sau mỗi update áp dụng một quy tắc xử lý biên thống nhất (gợi ý clip để kiểm thử đầu tiên). Nếu nguyên bản quy định khác clip, phải ghi đây là khác biệt và kiểm chứng riêng.
+P127: 5. Bổ sung unit test cho từng nhánh operator. Chạy 1 seed trên Sphere D=10, xuất convergence; chưa cần so sánh hơn kém với RIME.
+P128: # Khung log cần có cho một lần cập nhật cá thể
+P129: trace = {
+P130:     "iteration": 0, "individual": 0,
+P131:     "operator": "summer_resort", "fe_before": 0,
+P132:     "fe_after": 0, "fitness_before": None,
+P133:     "fitness_after": None, "best_f": None
+P134: }
+P136: Nhiệm vụ 3.5 – Triển khai RIME nguyên bản
+P137: 1. Tạo src/optimizers/rime.py, cùng giao diện và cùng kiểu dữ liệu kết quả với coa.py.
+P138: 2. Cài soft-rime search, hard-rime puncture, greedy selection thành các khối độc lập; tra cứu biểu thức và xác suất đúng từ Su et al. (2023).
+P139: 3. Kiểm tra cập nhật không vượt bounds, không làm mất best_f nếu dùng elitism/greedy selection theo bản gốc, và không dùng biến random toàn cục.
+P140: 4. Chạy N=4,D=2 với trace từng operator; kiểm tra riêng trường hợp xác suất kích hoạt gần 0 và gần 1 bằng random seed hoặc giả lập RNG.
+P141: 5. Chạy 1 seed Sphere D=10 và vẽ convergence theo FE, rồi đối chiếu định tính với hình trong bài báo (không yêu cầu trùng số vì khác seed và máy).
+P142: Nhiệm vụ 3.6 – Thực nghiệm công bằng, thống kê và biểu đồ
+P143: Thí nghiệm tối thiểu để nghiệm thu STEP 3: 3 hàm × 2 thuật toán × 10 seed, D=10. Giữ population_size = 20 và max_fe = 3.000 cho mọi lượt chạy. Nếu máy yếu, có thể giảm thống nhất nhưng phải xin phép và ghi rõ thay đổi; không dùng ngân sách cao hơn cho thuật toán ưa thích.
+P145: Cách tính thống kê qua các lần chạy
+P148: 1. Tạo scripts/run_benchmarks.py để chạy matrix thuật toán × hàm × seed, lưu kết quả từng lần chạy; benchmark không có dữ liệu thời tiết/tàu.
+P149: 2. Với mỗi (thuật toán, hàm) báo mean, std, min, median, max best_f và FE dùng; vẽ trung bình convergence với trục X là FE.
+P150: 3. Chỉ mô tả kết quả quan sát được, không kết luận “COA/RIME luôn tốt hơn”. Vì mẫu 10 seed nhỏ, xem là kiểm chứng triển khai, chưa phải nghiên cứu so sánh thống kê sâu.
+P151: 4. Dùng 01 kiểm tra sanity: với các benchmark có nghiệm tối ưu đã biết bằng 0, best_f phải không âm trong sai số số học và best_f ≤ fitness ban đầu tốt nhất khi thuật toán giữ best-so-far.
+P152: 5. Tạo run_config.json ghi Python, NumPy, OS, seed, bounds, N, D, FE, phiên bản source; cam kết chạy lại từ README.
+P153: Nhiệm vụ 3.7 – Chuẩn bị adapter cho bài toán tuyến tàu, chưa tối ưu
+P154: Nhóm chỉ thiết kế, chưa bắt buộc tích hợp và chạy COA/RIME trên lộ trình thật. Từ một vector D chiều, adapter sẽ giải mã thành waypoint trung gian; giữ cố định cảng đi/đến và gọi evaluate_route(). Trước lúc sử dụng, phải khóa số waypoint, miền tọa độ, cách sửa tuyến đi xuyên đất và chính sách rủi ro thời tiết.
+P156: K là số waypoint trung gian cần được nhóm chọn cho bài toán tối ưu, không phải số waypoint của tuyến thủ công R01/R02/R03. Khi đã có K, cần mô tả cách tính, kiểm biên, xử lý nghiệm không khả thi và giới hạn số FE evaluator. Không hứa hẹn rằng chạy COA/RIME sẽ tự tạo đường “xanh” nếu ảnh hưởng sóng/gió chưa được đưa vào mục tiêu hoặc ràng buộc.
+P157: Nhiệm vụ 3.8 – Đóng gói và điều kiện chuyển bước
+P158: 1. Nộp mã nguồn, requirements, README mới, các bảng CSV/JSON, hình convergence và bảng kiểm thử; có thể dùng một repository với hai thư mục step2_locked và step3_benchmarks.
+P159: 2. Ba thành viên phải trình bày trực tiếp ít nhất một operator của COA hoặc RIME, một ca test, một đồ thị convergence và cách đếm FE.
+P160: 3. Giảng viên nghiệm thu độc lập STEP 2 bổ sung và STEP 3 benchmark. Nếu một trong hai phần không đạt thì chưa chuyển sang thiết kế hybrid trên bài toán hàng hải.
+P161: 4. Ở bước tiếp theo mới bàn thiết kế COA–RIME (trao đổi nghiệm/operator-level) và mô hình thời tiết–nhiên liệu đủ phù hợp để đánh giá lợi ích.
+P162: IV. Cấu trúc sản phẩm và phân công đề nghị
+P163: greenship/
+P164:   config/step2_scenario.yaml
+P165:   src/evaluator.py                 # STEP 2 đã khóa
+P166:   src/weather.py                   # STEP 2 đã khóa
+P167:   src/optimizers/coa.py            # STEP 3
+P168:   src/optimizers/rime.py           # STEP 3
+P169:   src/optimizers/common.py         # giao diện + FE counter
+P170:   benchmarks/functions.py
+P171:   scripts/run_benchmarks.py
+P172:   tests/test_step2_regression.py
+P173:   tests/test_benchmarks.py
+P174:   tests/test_coa.py
+P175:   tests/test_rime.py
+P176:   outputs/step2_fix/  outputs/step3/
+P177:   README.md  requirements.txt
+P178: V. Checklist nghiệm thu STEP 3
+P179: ☐  A01. Có changelog khắc phục STEP 2 và commit/tag phiên bản evaluator.
+P180: ☐  A02. power=0 và power<0 bị xử lý đúng trong mô hình đã chọn.
+P181: ☐  A03. ETA cuối được kiểm tra với coverage dữ liệu bắt buộc.
+P182: ☐  A04. Quy tắc sóng ven bờ, NaN và phạm vi tìm ô nhất quán; có test.
+P183: ☐  A05. Cấu hình [lon, lat] và số waypoint nhất quán; có validator.
+P184: ☐  A06. Có bảng độ nhạy bước mẫu và bán kính tìm ô, bản đồ Hs/UTC và README.
+P185: ☐  B01. Đã đọc và đối chiếu đúng bài báo gốc của COA và RIME.
+P186: ☐  B02. Có bảng mô tả rõ operator và phương trình/trang nguồn của mỗi thuật toán.
+P187: ☐  B03. Có giao diện optimize(objective,bounds,N,FE,seed) chung.
+P188: ☐  B04. Có kiểm thử benchmark tính giá trị đúng tại nghiệm chuẩn.
+P189: ☐  B05. COA độc lập triển khai đủ nhánh, có trace và unit tests.
+P190: ☐  B06. RIME độc lập triển khai đủ nhánh, có trace và unit tests.
+P191: ☐  B07. Mọi nghiệm đều nằm trong bounds; best_f và FE được kiểm chứng.
+P192: ☐  B08. 3 hàm × 2 thuật toán × ≥10 seed có bảng kết quả và convergence.
+P193: ☐  B09. Có README cho phép chạy lại và ghi môi trường/phần mềm, dữ liệu đầu vào.
+P194: ☐  B10. Có phác thảo adapter vector → waypoint → evaluate_route() nhưng chưa lẫn với thuật toán lai.
+P195: ☐  B11. Ba sinh viên trình bày và giải thích được code/test do nhóm viết.
+
+=== TABLES ===
+
+--- Table 0 (4 rows x 3 cols) ---
+Row 0: Hợp phần | Yêu cầu phải đạt | Chưa yêu cầu
+Row 1: A – STEP 2 bổ sung | Các lỗi biên và sai khác tài liệu được khắc phục; evaluator có thể chạy lại, có giới hạn khoa học được công bố. | Không buộc dựng mô hình thủy động lực học chi tiết hoặc huấn luyện AI.
+Row 2: B – STEP 3 mới | COA và RIME độc lập, bám mô tả gốc; giao diện chung, thử nghiệm có giới hạn FE và seed. | Chưa lai hai thuật toán; chưa chạy tối ưu tuyến tàu bằng COA–RIME.
+Row 3: Chuẩn bị STEP 4 | Biết biến route thành vector nghiệm, định nghĩa domain và ràng buộc dự kiến, có sơ đồ adapter. | Chưa phải chứng minh COA/RIME làm giảm CO₂ thực tế.
+
+--- Table 1 (5 rows x 2 cols) ---
+Row 0: Đầu ra bắt buộc phần A | Bằng chứng cần nộp
+Row 1: Bản STEP 2 đã sửa (phụ lục hoặc changelog) | Danh sách lỗi, file sửa, test cũ/mới và lý do quyết định về ràng buộc sóng.
+Row 2: Regression và test bổ sung | pytest log có số PASS/FAIL; test power=0, ETA cuối, sóng ven bờ, tọa độ; không tuyên bố PASS trước khi chạy.
+Row 3: Kết quả độ nhạy và bản đồ | Bảng 2,5/5/10 NM; bảng R=10/20/30 NM; ảnh Hs phủ route có UTC, legend, nguồn.
+Row 4: Phiên bản evaluator cố định | Commit hash, README chỉ cách chạy, nêu “mô hình nhiên liệu đơn giản – chưa có đáp ứng sóng/gió”.
+
+--- Table 2 (7 rows x 3 cols) ---
+Row 0: Thuật toán | Operator phải xác nhận | Nhóm cần diễn giải
+Row 1: COA | Summer resort | Nhánh điều kiện, điểm shade/best, biến ngẫu nhiên, quy tắc thay đổi X.
+Row 2: COA | Competition | Lựa chọn cá thể cạnh tranh, xử lý chỉ số và ranh giới.
+Row 3: COA | Foraging | Tình huống tìm thức ăn; điều kiện chia nhỏ thức ăn (nếu có); cách tạo nghiệm.
+Row 4: RIME | Soft-rime | Biểu thức cập nhật với nhiễu và biến điều khiển theo vòng lặp.
+Row 5: RIME | Hard-rime | Cơ chế đưa thành phần nghiệm về vị trí tốt; xác suất kích hoạt.
+Row 6: RIME | Greedy selection | Nghiệm mới thay nghiệm cũ khi nào; bảo toàn best như thế nào.
+
+--- Table 3 (4 rows x 3 cols) ---
+Row 0: Hàm | Miền gợi ý | Kiểm thử bắt buộc
+Row 1: Sphere | D=10; mỗi x∈[−5,12;5,12] | f([0,…,0])=0; f([1,…,1])=D; không âm.
+Row 2: Rastrigin | D=10; mỗi x∈[−5,12;5,12] | f([0,…,0])=0; không âm.
+Row 3: Rosenbrock | D=10; mỗi x∈[−2,048;2,048] | f([1,…,1])=0; f([0,…,0])=D−1.
+
+--- Table 4 (7 rows x 3 cols) ---
+Row 0: Tham số | Giá trị tối thiểu | Ghi chú
+Row 1: Bài toán | Sphere, Rastrigin, Rosenbrock | D=10.
+Row 2: Thuật toán | COA nguyên bản; RIME nguyên bản | Chưa hybrid.
+Row 3: Cá thể | N=20 cho cả hai | Bằng nhau; FE vẫn phải đếm thực tế.
+Row 4: Ngân sách | 3.000 FE mỗi lượt | Dừng theo FE, không dừng chỉ theo iteration.
+Row 5: Seed | 0,1,2,3,4,5,6,7,8,9 | Cùng danh sách seed, độc lập RNG.
+Row 6: Output | best_f, best_x, FE, thời gian, curve | Lưu CSV/JSON, ảnh biểu đồ, config.
