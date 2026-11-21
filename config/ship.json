@@ -36,7 +36,7 @@
   },
   "minimum_validity_rules": {
     "speed_through_water_kn": "> 0",
-    "service_power_kw": ">= 0",
+    "service_power_kw": "> 0",
     "sfoc_g_per_kwh": "> 0",
     "co2_emission_factor_t_per_t_fuel": "> 0"
   },

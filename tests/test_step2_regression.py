@@ -3,7 +3,14 @@ import json
 import yaml
 from pathlib import Path
 import pandas as pd
-from src.evaluator import doc_tham_so_tau, lay_gia_tri_tham_so, evaluate_route, MatNaDatLien, TEP_SHAPEFILE
+from src.evaluator import (
+    doc_tham_so_tau,
+    lay_gia_tri_tham_so,
+    evaluate_route,
+    check_arrival_coverage,
+    MatNaDatLien,
+    TEP_SHAPEFILE,
+)
 from src.weather import KhoDuLieuThoiTiet
 from src.route_geometry import doc_cac_tuyen
 
@@ -18,7 +25,7 @@ def test_power_positive_validation():
         }
     }
     with pytest.raises(ValueError):
-        lay_gia_tri_tham_so(ship_zero, "service_power_kw", "kW", cho_phep_bang_khong=False)
+        doc_tham_so_tau(ship_zero)
 
 def test_power_negative_validation():
     ship_neg = {
@@ -30,7 +37,18 @@ def test_power_negative_validation():
         }
     }
     with pytest.raises(ValueError):
-        lay_gia_tri_tham_so(ship_neg, "service_power_kw", "kW", cho_phep_bang_khong=False)
+        doc_tham_so_tau(ship_neg)
+
+def test_check_arrival_coverage_function():
+    # Test valid ETA
+    valid, err = check_arrival_coverage("2024-10-12T12:00:00Z")
+    assert valid is True
+    assert err is None
+    
+    # Test exceeded ETA
+    invalid, err = check_arrival_coverage("2024-10-15T02:00:00Z")
+    assert invalid is False
+    assert err == "WEATHER_TIME_OUT_OF_RANGE"
 
 def test_eta_coverage_buffer():
     # ETA of R01 must precede mandatory dataset coverage

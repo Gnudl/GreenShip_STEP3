@@ -67,7 +67,7 @@ def doc_tham_so_tau(cau_hinh_tau):
             cau_hinh_tau, "speed_through_water_kn", "kn"
         ),
         "service_power_kw": lay_gia_tri_tham_so(
-            cau_hinh_tau, "service_power_kw", "kW", cho_phep_bang_khong=True
+            cau_hinh_tau, "service_power_kw", "kW", cho_phep_bang_khong=False
         ),
         "sfoc_g_per_kwh": lay_gia_tri_tham_so(
             cau_hinh_tau, "sfoc_g_per_kwh", "g/kWh"
@@ -83,6 +83,36 @@ def doc_tham_so_tau(cau_hinh_tau):
             .get("value", "UNKNOWN")
         ),
     }
+
+
+def check_arrival_coverage(eta_utc, mandatory_end_utc="2024-10-14T23:00:00Z"):
+    """Kiểm tra thời điểm đến (ETA) có nằm trong phạm vi bao phủ của dữ liệu thời tiết bắt buộc.
+
+    Tham số:
+        eta_utc: pd.Timestamp hoặc chuỗi thời gian hoặc datetime UTC.
+        mandatory_end_utc: Mốc kết thúc dữ liệu thời tiết bắt buộc (mặc định 2024-10-14T23:00:00Z).
+
+    Trả về:
+        (hop_le: bool, ma_loi: Optional[str])
+    """
+    if eta_utc is None:
+        return False, "WEATHER_TIME_OUT_OF_RANGE"
+
+    eta_ts = pd.Timestamp(eta_utc)
+    if eta_ts.tzinfo is None:
+        eta_ts = eta_ts.tz_localize("UTC")
+    else:
+        eta_ts = eta_ts.tz_convert("UTC")
+
+    end_ts = pd.Timestamp(mandatory_end_utc)
+    if end_ts.tzinfo is None:
+        end_ts = end_ts.tz_localize("UTC")
+    else:
+        end_ts = end_ts.tz_convert("UTC")
+
+    if eta_ts > end_ts:
+        return False, "WEATHER_TIME_OUT_OF_RANGE"
+    return True, None
 
 
 def tinh_nhien_lieu_tan(cong_suat_kw, sfoc_g_kwh, thoi_gian_h):
@@ -304,6 +334,20 @@ def evaluate_route(route, departure_utc, ship, weather, land, cfg):
             break
         tong_thoi_gian_h += thoi_gian_doan_h
         tong_nhien_lieu_tan += nhien_lieu_doan_tan
+
+    # Kiểm tra ETA cuối với thời gian bao phủ của nguồn dữ liệu thời tiết bắt buộc
+    if not khong_tinh_duoc:
+        hop_le_eta, ma_loi_eta = check_arrival_coverage(thoi_diem_hien_tai)
+        if not hop_le_eta:
+            cac_vi_pham_van_hanh.append(
+                tao_vi_pham(
+                    "WEATHER_TIME_OUT_OF_RANGE",
+                    "hard",
+                    f"ETA ({dinh_dang_utc(thoi_diem_hien_tai)}) vượt quá thời gian bao phủ dữ liệu thời tiết bắt buộc (2024-10-14T23:00:00Z)",
+                    {"arrival_utc": dinh_dang_utc(thoi_diem_hien_tai)},
+                    1.0,
+                )
+            )
 
     khoang_cach_tham_chieu_nm = cfg.get("reference_distance_nm")
     ket_qua_rang_buoc = kiem_tra_rang_buoc(
